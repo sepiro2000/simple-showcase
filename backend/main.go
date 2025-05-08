@@ -8,6 +8,7 @@ import (
 	"backend/service"
 	"log"
 
+	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 )
 
@@ -32,6 +33,19 @@ func main() {
 
 	// Initialize router
 	router := gin.Default()
+
+	// Configure CORS
+	corsConfig := cors.DefaultConfig()
+	corsConfig.AllowOrigins = []string{
+		"*",
+	}
+	corsConfig.AllowMethods = []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"}
+	corsConfig.AllowHeaders = []string{"Origin", "Content-Type", "Accept", "Authorization"}
+	corsConfig.AllowCredentials = true
+	corsConfig.MaxAge = 12 * 60 * 60 // 12 hours
+
+	// Apply CORS middleware
+	router.Use(cors.New(corsConfig))
 
 	// API routes
 	api := router.Group("/api")

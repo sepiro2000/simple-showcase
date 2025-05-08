@@ -1,0 +1,26 @@
+[Unit]
+Description=Simple Showcase Backend Service
+After=network.target mysqld.service
+
+[Service]
+User=ec2-user
+Group=ec2-user
+WorkingDirectory=/opt/simple-showcase
+
+# Environment variables
+Environment="DB_HOST=127.0.0.1"
+Environment="DB_PORT=3306"
+Environment="DB_USER=showcase_user"
+Environment="DB_PASSWORD=YOUR_APP_PASSWORD_HERE"
+Environment="DB_NAME=simple_showcase"
+Environment="APP_PORT=8080"
+
+ExecStart=/opt/simple-showcase/simple-showcase-backend
+Restart=on-failure
+RestartSec=5s
+
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target 
