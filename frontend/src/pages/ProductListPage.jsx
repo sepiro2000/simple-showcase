@@ -25,13 +25,23 @@ export default function ProductListPage() {
     fetchProducts();
   }, []);
 
+  const handleLikeUpdate = (productId) => {
+    setProducts(prevProducts =>
+      prevProducts.map(product =>
+        product.id === productId
+          ? { ...product, likes: product.likes + 1 }
+          : product
+      )
+    );
+  };
+
   if (loading) return <LoadingSpinner />;
   if (error) return <ErrorMessage message={error} />;
 
   return (
     <div className="container mx-auto px-4 py-8">
       <h1 className="text-3xl font-bold text-gray-800 mb-8">Simple Showcase</h1>
-      <ProductGrid products={products} />
+      <ProductGrid products={products} onLikeSuccess={handleLikeUpdate} />
     </div>
   );
 } 

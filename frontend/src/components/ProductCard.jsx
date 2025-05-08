@@ -1,13 +1,12 @@
 import { Link } from 'react-router-dom';
 import { likeProduct } from '../services/api';
 
-export default function ProductCard({ product }) {
+export default function ProductCard({ product, onLikeSuccess }) {
   const handleLike = async (e) => {
     e.preventDefault(); // Prevent navigation when clicking like button
     try {
       await likeProduct(product.id);
-      // In a real app, you might want to update the UI or refetch the data
-      console.log('Product liked successfully');
+      onLikeSuccess?.(product.id);
     } catch (error) {
       console.error('Failed to like product:', error);
     }
