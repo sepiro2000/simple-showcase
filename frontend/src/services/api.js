@@ -4,7 +4,6 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
 const api = axios.create({
   baseURL: API_BASE_URL,
-  withCredentials: true, // Enable sending cookies if needed
 });
 
 export const getProducts = async () => {
@@ -12,7 +11,8 @@ export const getProducts = async () => {
     const response = await api.get('/api/products');
     return response.data;
   } catch (error) {
-    throw new Error(error.response?.data?.error || 'Failed to fetch products');
+    console.error('Error fetching products:', error);
+    throw error;
   }
 };
 
@@ -21,18 +21,17 @@ export const getProductById = async (id) => {
     const response = await api.get(`/api/products/${id}`);
     return response.data;
   } catch (error) {
-    if (error.response?.status === 404) {
-      throw new Error('Product not found');
-    }
-    throw new Error(error.response?.data?.error || 'Failed to fetch product');
+    console.error(`Error fetching product ${id}:`, error);
+    throw error;
   }
 };
 
 export const likeProduct = async (id) => {
   try {
-    await api.post(`/api/products/${id}/like`);
-    return true;
+    const response = await api.post(`/api/products/${id}/like`);
+    return response.data;
   } catch (error) {
-    throw new Error(error.response?.data?.error || 'Failed to like product');
+    console.error(`Error liking product ${id}:`, error);
+    throw error;
   }
 }; 
