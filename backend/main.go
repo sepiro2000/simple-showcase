@@ -36,13 +36,11 @@ func main() {
 
 	// Configure CORS
 	corsConfig := cors.DefaultConfig()
-	corsConfig.AllowOrigins = []string{
-		"*",
-	}
+	corsConfig.AllowOrigins = []string{"*"}
 	corsConfig.AllowMethods = []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"}
 	corsConfig.AllowHeaders = []string{"Origin", "Content-Type", "Accept", "Authorization"}
-	corsConfig.AllowCredentials = true
-	corsConfig.MaxAge = 12 * 60 * 60 // 12 hours
+	corsConfig.AllowCredentials = false // credentials를 허용하지 않음
+	corsConfig.MaxAge = 12 * 60 * 60    // 12 hours
 
 	// Apply CORS middleware
 	router.Use(cors.New(corsConfig))

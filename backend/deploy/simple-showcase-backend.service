@@ -5,7 +5,7 @@ After=network.target mysqld.service
 [Service]
 User=ec2-user
 Group=ec2-user
-WorkingDirectory=/opt/simple-showcase
+WorkingDirectory=/opt/simple-showcase-backend
 
 # Environment variables
 Environment="DB_HOST=127.0.0.1"
@@ -15,7 +15,7 @@ Environment="DB_PASSWORD=YOUR_APP_PASSWORD_HERE"
 Environment="DB_NAME=simple_showcase"
 Environment="APP_PORT=8080"
 
-ExecStart=/opt/simple-showcase/simple-showcase-backend
+ExecStart=/opt/simple-showcase-backend/simple-showcase-backend
 Restart=on-failure
 RestartSec=5s
 
