@@ -4,6 +4,7 @@ import (
 	"backend/models"
 	"backend/repository"
 	"context"
+	"errors"
 )
 
 // ProductService handles business logic for products
@@ -23,7 +24,14 @@ func (s *ProductService) ListProducts(ctx context.Context) ([]models.Product, er
 
 // GetProductByID returns a product by its ID
 func (s *ProductService) GetProductByID(ctx context.Context, id int64) (models.Product, error) {
-	return s.repo.GetByID(ctx, id)
+	product, err := s.repo.GetByID(ctx, id)
+	if err != nil {
+		return models.Product{}, err
+	}
+	if product == nil {
+		return models.Product{}, errors.New("product not found")
+	}
+	return *product, nil
 }
 
 // LikeProduct increments the like count for a product

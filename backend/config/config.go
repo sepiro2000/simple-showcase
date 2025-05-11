@@ -3,16 +3,21 @@ package config
 import (
 	"fmt"
 	"os"
+	"strconv"
 )
 
 // Config holds all configuration for the application
 type Config struct {
-	Port       string
-	DBHost     string
-	DBPort     string
-	DBUser     string
-	DBPassword string
-	DBName     string
+	Port          string
+	WriteDBHost   string
+	ReadDBHost    string
+	DBPort        string
+	DBUser        string
+	DBPassword    string
+	DBName        string
+	RedisHost     string
+	RedisPassword string
+	RedisDB       int
 }
 
 // Load loads configuration from environment variables
@@ -21,9 +26,12 @@ func Load() (*Config, error) {
 		Port: getEnvOrDefault("PORT", "8080"),
 	}
 
-	// Required environment variables
-	if cfg.DBHost = os.Getenv("DB_HOST"); cfg.DBHost == "" {
-		return nil, fmt.Errorf("DB_HOST environment variable is required")
+	// Required environment variables for database
+	if cfg.WriteDBHost = os.Getenv("DB_WRITE_HOST"); cfg.WriteDBHost == "" {
+		return nil, fmt.Errorf("DB_WRITE_HOST environment variable is required")
+	}
+	if cfg.ReadDBHost = os.Getenv("DB_READ_HOST"); cfg.ReadDBHost == "" {
+		return nil, fmt.Errorf("DB_READ_HOST environment variable is required")
 	}
 	if cfg.DBPort = os.Getenv("DB_PORT"); cfg.DBPort == "" {
 		return nil, fmt.Errorf("DB_PORT environment variable is required")
@@ -36,6 +44,17 @@ func Load() (*Config, error) {
 	}
 	if cfg.DBName = os.Getenv("DB_NAME"); cfg.DBName == "" {
 		return nil, fmt.Errorf("DB_NAME environment variable is required")
+	}
+
+	// Optional Redis configuration
+	cfg.RedisHost = os.Getenv("REDIS_HOST")
+	cfg.RedisPassword = os.Getenv("REDIS_PASSWORD")
+	if redisDB := os.Getenv("REDIS_DB"); redisDB != "" {
+		var err error
+		cfg.RedisDB, err = strconv.Atoi(redisDB)
+		if err != nil {
+			return nil, fmt.Errorf("invalid REDIS_DB value: %v", err)
+		}
 	}
 
 	return cfg, nil

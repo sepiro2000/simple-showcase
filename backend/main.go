@@ -1,6 +1,7 @@
 package main
 
 import (
+	"backend/cache"
 	"backend/config"
 	"backend/database"
 	"backend/handler"
@@ -19,15 +20,34 @@ func main() {
 		log.Fatalf("Failed to load configuration: %v", err)
 	}
 
-	// Connect to database
-	db, err := database.ConnectDB(cfg)
+	// Connect to write database
+	writeDB, err := database.ConnectWriteDB(cfg)
 	if err != nil {
-		log.Fatalf("Failed to connect to database: %v", err)
+		log.Fatalf("Failed to connect to write database: %v", err)
 	}
-	defer db.Close()
+	defer writeDB.Close()
+
+	// Connect to read database
+	readDB, err := database.ConnectReadDB(cfg)
+	if err != nil {
+		log.Fatalf("Failed to connect to read database: %v", err)
+	}
+	defer readDB.Close()
+
+	// Connect to Redis if configured
+	redisClient, err := cache.ConnectRedis(cfg)
+	if err != nil {
+		log.Fatalf("Failed to connect to Redis: %v", err)
+	}
+	if redisClient != nil {
+		defer redisClient.Close()
+		log.Println("Redis connection established")
+	} else {
+		log.Println("Redis not configured, using database for likes")
+	}
 
 	// Initialize dependencies
-	productRepo := repository.NewMySQLProductRepository(db)
+	productRepo := repository.NewProductRepository(writeDB, readDB, redisClient)
 	productService := service.NewProductService(productRepo)
 	productHandler := handler.NewProductHandler(productService)
 
