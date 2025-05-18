@@ -27,11 +27,11 @@ func Load() (*Config, error) {
 	}
 
 	// Required environment variables for database
-	if cfg.WriteDBHost = os.Getenv("DB_WRITE_HOST"); cfg.WriteDBHost == "" {
-		return nil, fmt.Errorf("DB_WRITE_HOST environment variable is required")
+	if cfg.WriteDBHost = os.Getenv("WRITE_DB_HOST"); cfg.WriteDBHost == "" {
+		return nil, fmt.Errorf("WRITE_DB_HOST environment variable is required")
 	}
-	if cfg.ReadDBHost = os.Getenv("DB_READ_HOST"); cfg.ReadDBHost == "" {
-		return nil, fmt.Errorf("DB_READ_HOST environment variable is required")
+	if cfg.ReadDBHost = os.Getenv("READ_DB_HOST"); cfg.ReadDBHost == "" {
+		return nil, fmt.Errorf("READ_DB_HOST environment variable is required")
 	}
 	if cfg.DBPort = os.Getenv("DB_PORT"); cfg.DBPort == "" {
 		return nil, fmt.Errorf("DB_PORT environment variable is required")
