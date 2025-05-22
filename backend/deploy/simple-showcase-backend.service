@@ -1,6 +1,6 @@
 [Unit]
 Description=Simple Showcase Backend Service
-After=network.target mysqld.service
+After=network.target
 
 [Service]
 User=ec2-user
