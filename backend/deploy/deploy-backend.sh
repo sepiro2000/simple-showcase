@@ -165,4 +165,19 @@ echo -n "Enabling service... "
 sudo systemctl enable simple-showcase-backend
 check_status "Failed to enable service"
 
+# Copy nginx configuration
+echo -n "Copying nginx configuration... "
+sudo cp -a "$APP_PATH/deploy/simple-showcase-backend.conf" /etc/nginx/conf.d/simple-showcase-backend.conf
+check_status "Failed to copy nginx configuration"
+
+# Test nginx configuration
+echo -n "Testing nginx configuration... "
+sudo nginx -t
+check_status "Failed to test nginx configuration"
+
+# Restart nginx
+echo -n "Restarting nginx... "
+sudo systemctl restart nginx
+check_status "Failed to restart nginx"
+
 echo -e "\n${GREEN}✓ Backend deployment completed successfully!${NC}"
