@@ -8,6 +8,25 @@ GREEN='\033[0;32m'
 RED='\033[0;31m'
 NC='\033[0m' # No Color
 
+# Show help message
+show_help() {
+    echo "Frontend Deployment Script"
+    echo "Usage: ./deploy-frontend.sh [API_URL] [NODE_VERSION] [DEPLOY_PATH] [APP_PATH]"
+    echo "Example: ./deploy-frontend.sh \"https://api.example.com\" \"20.11.1\" \"/usr/share/nginx/html/myapp\" \"/home/ec2-user/app/myapp/frontend\""
+    echo ""
+    echo "Arguments:"
+    echo "  API_URL       - Backend API URL (default: http://localhost:8080)"
+    echo "  NODE_VERSION  - Node.js version to install (default: 20.11.1)"
+    echo "  DEPLOY_PATH   - Nginx deployment path (default: /usr/share/nginx/html/simple-showcase-frontend)"
+    echo "  APP_PATH      - Frontend application path (default: /home/ec2-user/app/simple-showcase/frontend)"
+    exit 0
+}
+
+# Check for help argument
+if [ "$1" = "help" ] || [ "$1" = "--help" ] || [ "$1" = "-h" ]; then
+    show_help
+fi
+
 # Default values
 DEFAULT_API_URL="http://localhost:8080"
 DEFAULT_NODE_VERSION="20.11.1"  # LTS version
@@ -65,12 +84,6 @@ else
     handle_error "Could not find NVM installation"
 fi
 check_status "Failed to source NVM"
-
-# Install specific Node.js version
-echo -n "Installing Node.js $NODE_VERSION... "
-nvm install $NODE_VERSION
-nvm use $NODE_VERSION
-check_status "Failed to install Node.js"
 
 # Verify Node.js and npm installation
 echo -n "Verifying Node.js and npm installation... "
@@ -134,5 +147,3 @@ sudo systemctl restart nginx
 check_status "Failed to restart nginx"
 
 echo -e "\n${GREEN}✓ Frontend deployment completed successfully!${NC}"
-echo -e "Usage: ./deploy-frontend.sh [API_URL] [NODE_VERSION] [DEPLOY_PATH] [APP_PATH]"
-echo -e "Example: ./deploy-frontend.sh \"https://api.example.com\" \"20.11.1\" \"/usr/share/nginx/html/myapp\" \"/home/ec2-user/app/myapp/frontend\""
