@@ -3,6 +3,9 @@
 # Exit on error
 set -e
 
+# Disable history expansion
+set +H
+
 # Color codes
 GREEN='\033[0;32m'
 RED='\033[0;31m'
@@ -13,7 +16,7 @@ show_help() {
     echo "Backend Deployment Script"
     echo "Usage: ./deploy-backend.sh [ENV_VAR=VALUE]..."
     echo ""
-    echo "Example: ./deploy-backend.sh DB_PASSWORD=abc123 WRITE_DB_HOST=localhost"
+    echo "Example: ./deploy-backend.sh 'DB_PASSWORD=abc123' 'WRITE_DB_HOST=localhost'"
     echo ""
     echo "Available environment variables:"
     echo "  WRITE_DB_HOST    - Write database host (default: 127.0.0.1)"
@@ -23,6 +26,9 @@ show_help() {
     echo "  DB_PASSWORD     - Database password (default: YOUR_APP_PASSWORD_HERE)"
     echo "  DB_NAME         - Database name (default: simple_showcase)"
     echo "  APP_PORT        - Application port (default: 8080)"
+    echo ""
+    echo "Note: Use single quotes around values containing special characters"
+    echo "Example: ./deploy-backend.sh 'DB_PASSWORD=abc!@#'"
     exit 0
 }
 
@@ -67,13 +73,13 @@ for arg in "$@"; do
         key="${arg%%=*}"
         value="${arg#*=}"
         case $key in
-            WRITE_DB_HOST) DEFAULT_WRITE_DB_HOST=$value ;;
-            READ_DB_HOST) DEFAULT_READ_DB_HOST=$value ;;
-            DB_PORT) DEFAULT_DB_PORT=$value ;;
-            DB_USER) DEFAULT_DB_USER=$value ;;
-            DB_PASSWORD) DEFAULT_DB_PASSWORD=$value ;;
-            DB_NAME) DEFAULT_DB_NAME=$value ;;
-            APP_PORT) DEFAULT_APP_PORT=$value ;;
+            WRITE_DB_HOST) DEFAULT_WRITE_DB_HOST="$value" ;;
+            READ_DB_HOST) DEFAULT_READ_DB_HOST="$value" ;;
+            DB_PORT) DEFAULT_DB_PORT="$value" ;;
+            DB_USER) DEFAULT_DB_USER="$value" ;;
+            DB_PASSWORD) DEFAULT_DB_PASSWORD="$value" ;;
+            DB_NAME) DEFAULT_DB_NAME="$value" ;;
+            APP_PORT) DEFAULT_APP_PORT="$value" ;;
             *) echo -e "${RED}Warning: Unknown environment variable $key${NC}" ;;
         esac
     fi
@@ -119,13 +125,26 @@ echo -n "Updating service file... "
 SERVICE_FILE="$APP_PATH/deploy/simple-showcase-backend.service"
 TEMP_FILE=$(mktemp)
 
-sed "s|Environment=\"WRITE_DB_HOST=.*\"|Environment=\"WRITE_DB_HOST=$DEFAULT_WRITE_DB_HOST\"|" "$SERVICE_FILE" > "$TEMP_FILE"
-sed -i "s|Environment=\"READ_DB_HOST=.*\"|Environment=\"READ_DB_HOST=$DEFAULT_READ_DB_HOST\"|" "$TEMP_FILE"
-sed -i "s|Environment=\"DB_PORT=.*\"|Environment=\"DB_PORT=$DEFAULT_DB_PORT\"|" "$TEMP_FILE"
-sed -i "s|Environment=\"DB_USER=.*\"|Environment=\"DB_USER=$DEFAULT_DB_USER\"|" "$TEMP_FILE"
-sed -i "s|Environment=\"DB_PASSWORD=.*\"|Environment=\"DB_PASSWORD=$DEFAULT_DB_PASSWORD\"|" "$TEMP_FILE"
-sed -i "s|Environment=\"DB_NAME=.*\"|Environment=\"DB_NAME=$DEFAULT_DB_NAME\"|" "$TEMP_FILE"
-sed -i "s|Environment=\"APP_PORT=.*\"|Environment=\"APP_PORT=$DEFAULT_APP_PORT\"|" "$TEMP_FILE"
+# Escape special characters in values
+escape_value() {
+    echo "$1" | sed 's/[\/&]/\\&/g'
+}
+
+WRITE_DB_HOST_ESC=$(escape_value "$DEFAULT_WRITE_DB_HOST")
+READ_DB_HOST_ESC=$(escape_value "$DEFAULT_READ_DB_HOST")
+DB_PORT_ESC=$(escape_value "$DEFAULT_DB_PORT")
+DB_USER_ESC=$(escape_value "$DEFAULT_DB_USER")
+DB_PASSWORD_ESC=$(escape_value "$DEFAULT_DB_PASSWORD")
+DB_NAME_ESC=$(escape_value "$DEFAULT_DB_NAME")
+APP_PORT_ESC=$(escape_value "$DEFAULT_APP_PORT")
+
+sed "s|Environment=\"WRITE_DB_HOST=.*\"|Environment=\"WRITE_DB_HOST=$WRITE_DB_HOST_ESC\"|" "$SERVICE_FILE" > "$TEMP_FILE"
+sed -i "s|Environment=\"READ_DB_HOST=.*\"|Environment=\"READ_DB_HOST=$READ_DB_HOST_ESC\"|" "$TEMP_FILE"
+sed -i "s|Environment=\"DB_PORT=.*\"|Environment=\"DB_PORT=$DB_PORT_ESC\"|" "$TEMP_FILE"
+sed -i "s|Environment=\"DB_USER=.*\"|Environment=\"DB_USER=$DB_USER_ESC\"|" "$TEMP_FILE"
+sed -i "s|Environment=\"DB_PASSWORD=.*\"|Environment=\"DB_PASSWORD=$DB_PASSWORD_ESC\"|" "$TEMP_FILE"
+sed -i "s|Environment=\"DB_NAME=.*\"|Environment=\"DB_NAME=$DB_NAME_ESC\"|" "$TEMP_FILE"
+sed -i "s|Environment=\"APP_PORT=.*\"|Environment=\"APP_PORT=$APP_PORT_ESC\"|" "$TEMP_FILE"
 
 sudo cp "$TEMP_FILE" /etc/systemd/system/simple-showcase-backend.service
 rm "$TEMP_FILE"
