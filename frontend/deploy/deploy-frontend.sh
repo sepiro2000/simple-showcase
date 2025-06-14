@@ -64,10 +64,6 @@ echo -e "Using Node.js version: ${GREEN}$NODE_VERSION${NC}"
 echo -e "Deploy path: ${GREEN}$DEPLOY_PATH${NC}"
 echo -e "App path: ${GREEN}$APP_PATH${NC}"
 
-# Install required packages
-echo -n "Installing required packages... "
-sudo dnf update -y && sudo dnf install -y curl git
-check_status "Failed to install required packages"
 
 # Install NVM
 echo -n "Installing NVM... "
@@ -84,6 +80,12 @@ else
     handle_error "Could not find NVM installation"
 fi
 check_status "Failed to source NVM"
+
+# Install Node.js
+echo -n "Installing Node.js $NODE_VERSION... "
+nvm install $NODE_VERSION
+nvm use $NODE_VERSION
+check_status "Failed to install Node.js"
 
 # Verify Node.js and npm installation
 echo -n "Verifying Node.js and npm installation... "
