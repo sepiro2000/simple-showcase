@@ -16,7 +16,7 @@ show_help() {
     echo "Backend Deployment Script"
     echo "Usage: ./deploy-backend.sh [ENV_VAR=VALUE]..."
     echo ""
-    echo "Example: ./deploy-backend.sh 'DB_PASSWORD=abc123' 'WRITE_DB_HOST=localhost'"
+    echo "Example: ./deploy-backend.sh 'DB_PASSWORD=abc123' 'WRITE_DB_HOST=localhost' 'REDIS_HOST=localhost:6379'"
     echo ""
     echo "Available environment variables:"
     echo "  WRITE_DB_HOST    - Write database host (default: 127.0.0.1)"
@@ -26,6 +26,7 @@ show_help() {
     echo "  DB_PASSWORD     - Database password (default: YOUR_APP_PASSWORD_HERE)"
     echo "  DB_NAME         - Database name (default: simple_showcase)"
     echo "  APP_PORT        - Application port (default: 8080)"
+    echo "  REDIS_HOST      - Redis host (optional, e.g., localhost:6379)"
     echo ""
     echo "Note: Use single quotes around values containing special characters"
     echo "Example: ./deploy-backend.sh 'DB_PASSWORD=abc!@#'"
@@ -45,6 +46,7 @@ DEFAULT_DB_USER="showcase_user"
 DEFAULT_DB_PASSWORD="YOUR_APP_PASSWORD_HERE"
 DEFAULT_DB_NAME="simple_showcase"
 DEFAULT_APP_PORT="8080"
+DEFAULT_REDIS_HOST=""  # Empty by default (optional)
 
 # Get current user and home directory
 CURRENT_USER=$(whoami)
@@ -80,6 +82,7 @@ for arg in "$@"; do
             DB_PASSWORD) DEFAULT_DB_PASSWORD="$value" ;;
             DB_NAME) DEFAULT_DB_NAME="$value" ;;
             APP_PORT) DEFAULT_APP_PORT="$value" ;;
+            REDIS_HOST) DEFAULT_REDIS_HOST="$value" ;;
             *) echo -e "${RED}Warning: Unknown environment variable $key${NC}" ;;
         esac
     fi
@@ -94,6 +97,11 @@ echo -e "  DB_USER: ${GREEN}$DEFAULT_DB_USER${NC}"
 echo -e "  DB_PASSWORD: ${GREEN}****${NC}"
 echo -e "  DB_NAME: ${GREEN}$DEFAULT_DB_NAME${NC}"
 echo -e "  APP_PORT: ${GREEN}$DEFAULT_APP_PORT${NC}"
+if [ -n "$DEFAULT_REDIS_HOST" ]; then
+    echo -e "  REDIS_HOST: ${GREEN}$DEFAULT_REDIS_HOST${NC}"
+else
+    echo -e "  REDIS_HOST: ${RED}Not set (Redis disabled)${NC}"
+fi
 
 # Install required packages
 echo -n "Installing required packages... "
@@ -138,13 +146,33 @@ DB_PASSWORD_ESC=$(escape_value "$DEFAULT_DB_PASSWORD")
 DB_NAME_ESC=$(escape_value "$DEFAULT_DB_NAME")
 APP_PORT_ESC=$(escape_value "$DEFAULT_APP_PORT")
 
-sed "s|Environment=\"WRITE_DB_HOST=.*\"|Environment=\"WRITE_DB_HOST=$WRITE_DB_HOST_ESC\"|" "$SERVICE_FILE" > "$TEMP_FILE"
+# Start with the original service file
+cp "$SERVICE_FILE" "$TEMP_FILE"
+
+# Update existing environment variables
+sed -i "s|Environment=\"WRITE_DB_HOST=.*\"|Environment=\"WRITE_DB_HOST=$WRITE_DB_HOST_ESC\"|" "$TEMP_FILE"
 sed -i "s|Environment=\"READ_DB_HOST=.*\"|Environment=\"READ_DB_HOST=$READ_DB_HOST_ESC\"|" "$TEMP_FILE"
 sed -i "s|Environment=\"DB_PORT=.*\"|Environment=\"DB_PORT=$DB_PORT_ESC\"|" "$TEMP_FILE"
 sed -i "s|Environment=\"DB_USER=.*\"|Environment=\"DB_USER=$DB_USER_ESC\"|" "$TEMP_FILE"
 sed -i "s|Environment=\"DB_PASSWORD=.*\"|Environment=\"DB_PASSWORD=$DB_PASSWORD_ESC\"|" "$TEMP_FILE"
 sed -i "s|Environment=\"DB_NAME=.*\"|Environment=\"DB_NAME=$DB_NAME_ESC\"|" "$TEMP_FILE"
 sed -i "s|Environment=\"APP_PORT=.*\"|Environment=\"APP_PORT=$APP_PORT_ESC\"|" "$TEMP_FILE"
+
+# Handle REDIS_HOST conditionally
+if [ -n "$DEFAULT_REDIS_HOST" ]; then
+    # REDIS_HOST has a value, add or update it
+    REDIS_HOST_ESC=$(escape_value "$DEFAULT_REDIS_HOST")
+    if grep -q "Environment=\"REDIS_HOST=" "$TEMP_FILE"; then
+        # Update existing REDIS_HOST
+        sed -i "s|Environment=\"REDIS_HOST=.*\"|Environment=\"REDIS_HOST=$REDIS_HOST_ESC\"|" "$TEMP_FILE"
+    else
+        # Add REDIS_HOST after APP_PORT
+        sed -i "/Environment=\"APP_PORT=/a Environment=\"REDIS_HOST=$REDIS_HOST_ESC\"" "$TEMP_FILE"
+    fi
+else
+    # REDIS_HOST is empty, remove it if it exists
+    sed -i "/Environment=\"REDIS_HOST=/d" "$TEMP_FILE"
+fi
 
 sudo cp "$TEMP_FILE" /etc/systemd/system/simple-showcase-backend.service
 rm "$TEMP_FILE"
