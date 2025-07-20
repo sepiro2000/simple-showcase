@@ -2,10 +2,11 @@ package cache
 
 import (
 	"context"
-	"fmt"
+	"encoding/json"
 	"time"
 
 	"backend/config"
+	"backend/models"
 
 	"github.com/redis/go-redis/v9"
 )
@@ -34,31 +35,57 @@ func ConnectRedis(cfg *config.Config) (*redis.Client, error) {
 	return client, nil
 }
 
-// GetProductLikes retrieves the like count for a product from Redis
-func GetProductLikes(ctx context.Context, client *redis.Client, productID int64) (int64, error) {
+// GetProductList retrieves the product list from Redis
+// Returns (products, exists, error) where exists indicates if the key was found in Redis
+func GetProductList(ctx context.Context, client *redis.Client) ([]models.Product, bool, error) {
 	if client == nil {
-		return 0, nil
+		return nil, false, nil
 	}
 
-	key := getProductLikesKey(productID)
-	val, err := client.Get(ctx, key).Int64()
+	key := getProductListKey()
+	val, err := client.Get(ctx, key).Result()
 	if err == redis.Nil {
-		return 0, nil
+		return nil, false, nil // Key doesn't exist in Redis
 	}
-	return val, err
+	if err != nil {
+		return nil, false, err
+	}
+
+	var products []models.Product
+	if err := json.Unmarshal([]byte(val), &products); err != nil {
+		return nil, false, err
+	}
+
+	return products, true, nil
 }
 
-// IncrementProductLikes increments the like count for a product in Redis
-func IncrementProductLikes(ctx context.Context, client *redis.Client, productID int64) (int64, error) {
+// SetProductList sets the product list in Redis
+func SetProductList(ctx context.Context, client *redis.Client, products []models.Product) error {
 	if client == nil {
-		return 0, nil
+		return nil
 	}
 
-	key := getProductLikesKey(productID)
-	return client.Incr(ctx, key).Result()
+	key := getProductListKey()
+	data, err := json.Marshal(products)
+	if err != nil {
+		return err
+	}
+
+	// Cache for 1 hour
+	return client.Set(ctx, key, data, time.Hour).Err()
 }
 
-// getProductLikesKey returns the Redis key for a product's likes
-func getProductLikesKey(productID int64) string {
-	return fmt.Sprintf("product:%d:likes", productID)
+// InvalidateProductList removes the product list from Redis cache
+func InvalidateProductList(ctx context.Context, client *redis.Client) error {
+	if client == nil {
+		return nil
+	}
+
+	key := getProductListKey()
+	return client.Del(ctx, key).Err()
+}
+
+// getProductListKey returns the Redis key for product list
+func getProductListKey() string {
+	return "product:list"
 }
